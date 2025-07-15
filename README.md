@@ -175,8 +175,8 @@ This configuration lets your ESP32 publish odometry and subscribe to velocity co
   * **Processing**: These commands are parsed by a custom node/script into separate wheel angular velocities and republished on `/velocity_ctrl`. This allows integration with keyboard or joystick teleoperation.
 
 
-## PID Control
-
+## PID Control library
+findable here: https://github.com/EmDonato/PID_control.git 
 * **Controllers**: Two independent PID loops for left and right wheels
 * **Feedforward**: Enabled to improve dynamic response
 * **Deadzone**: Zero threshold prevents jitter around zero velocity
