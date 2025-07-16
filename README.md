@@ -27,7 +27,7 @@ This project implements a differential-drive robot using an ESP32 microcontrolle
 * **Wheel Encoders**: Magnetic encoders connected to GPIO pins (motor 12v dc 25ga-370, 130 rpm)
 * **IMU**: MPU6050 connected via I2C (SDA, SCL pins)
 * **Motor Driver**: L298N controlled via PWM and digital direction pins (findable here: https://github.com/EmDonato/motorDriver.git)
-* **LiDAR**: LD06 (handled in a separate module; requires an additional ESP32 when integrated)
+* **LiDAR**: LD06 (handled in a separate module https://github.com/EmDonato/ld06_esp32_microRos.git; requires an additional ESP32 when integrated)
 * **Battery**: 12v nimh battery
 * **DC-DC converter**: XL4015 STEP DOWN
 
