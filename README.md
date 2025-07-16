@@ -1,6 +1,6 @@
 # Differential-Drive ESP32 Robot with micro-ROS Humble
 
-This project implements a differential-drive robot using an ESP32 microcontroller and integrates it with micro-ROS Humble for ROS 2 communication. The system fuses wheel encoder data and IMU measurements to perform odometry and publishes it over ROS 2, while also subscribing to control commands for closed-loop velocity control. Actually it's only for teleoperation application, so it's implemented only joystick navigation. Stay tuned for the autonoumus navigation.
+This project implements a differential-drive robot using an ESP32 microcontroller and integrates it with micro-ROS Humble for ROS 2 communication. The system fuses wheel encoder data and IMU measurements to perform odometry and publishes it over ROS 2, while also subscribing to control commands for closed-loop velocity control. The ros2 project for the companion PC is findable here: https://github.com/EmDonato/Leonardo.git. Actually it's only for teleoperation application, so it's implemented only joystick navigation. Stay tuned for the autonoumus navigation.
 
 ## Table of Contents
 
@@ -184,6 +184,28 @@ findable here: https://github.com/EmDonato/PID_control.git
 ## Calibration
 
 * **Gyroscope**: `calibrateGyroZ()` averages 500 samples to compute bias
+
+---
+
+## Next Steps
+
+1. **Update Velocity Command Message Type**
+
+   * Verify the current topic (`/cmd_vel` or equivalent).
+
+2. **Integrate Nav2 for Autonomous Navigation**
+
+   * Add nav2
+
+3. **Review Publishing Topics**
+
+   * **`/odom`**: Publish filtered odometry (e.g., using `robot_localization`).
+   * **`/imu`**: Publish IMU data (linear acceleration and angular velocity). (to be ready for robot_localization)
+   * **`/debug_string`**: Add a publisher of type `std_msgs/msg/String` for debug and diagnostic messages.
+
+---
+
+> Once these steps are complete, the robot will be able to receive correct velocity commands, navigate autonomously, and provide real-time diagnostic data for easier debugging and system validation.
 
 ## License
 
