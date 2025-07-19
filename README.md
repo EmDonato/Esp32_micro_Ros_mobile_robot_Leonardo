@@ -1,7 +1,8 @@
 # Differential-Drive ESP32 Robot with micro-ROS Humble
 
-This project implements a differential-drive robot using an ESP32 microcontroller and integrates it with micro-ROS Humble for ROS 2 communication. The system fuses wheel encoder data and IMU measurements to perform odometry and publishes it over ROS 2, while also subscribing to control commands for closed-loop velocity control. The ros2 project for the companion PC is findable here: https://github.com/EmDonato/Leonardo.git. Actually it's only for teleoperation application, so it's implemented only joystick navigation. Stay tuned for the autonoumus navigation.
+This project implements a differential-drive robot using an ESP32 microcontroller and integrates it with micro-ROS Humble for ROS 2 communication. The system fuses wheel encoder data and IMU measurements to perform odometry and publishes it over ROS 2 with also the Lider Scan for SLAM, while also subscribing to request commands of a gamepad. The ros2 project for the companion PC is findable here: https://github.com/EmDonato/Leonardo.git. Actually it's only for teleoperation application, so it's implemented only joystick navigation. Stay tuned for the autonoumus navigation.
 
+![Leonardo](docs/img/Leonardo.jpg "Robot overview")
 ## Table of Contents
 
 1. [Hardware Setup](#hardware-setup)
