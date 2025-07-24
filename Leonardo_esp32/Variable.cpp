@@ -23,10 +23,15 @@ const int pwmResolution  = 12;  /**< LEDC PWM resolution in bits */
 
 // --- micro-ROS OBJECTS ---
 rcl_publisher_t encoder_pub;              /**< Publisher for odometry messages */
+rcl_publisher_t imu_pub;                  /**< Publisher for IMU messages */
+rcl_publisher_t debug_pub;               
 rcl_subscription_t control_sub;           /**< Subscriber for velocity control */
 
 rcl_node_t enc_node;                      /**< ROS node for encoders */
 rcl_node_t ctrl_node;                     /**< ROS node for control */
+rcl_node_t imu_node;                     /**< ROS node for imu */
+rcl_node_t debug_node;                    
+
 
 rcl_timer_t timer_odmtry;                 /**< Timer for odometry callbacks */
 rcl_timer_t timer_ctrl;                   /**< Timer for control callbacks */
@@ -43,7 +48,9 @@ int init_uRos_code;                       /**< micro-ROS initialization status c
 float data_array[5];                      /**< Generic data buffer array */
 geometry_msgs__msg__Vector3 control_msg;  /**< Received control command */
 nav_msgs__msg__Odometry odom_msg;        /**< Odometry message to publish */
-
+geometry_msgs__msg__Twist cmd_vel_msg;    /**< Received control command */
+sensor_msgs__msg__Imu imu_msg;            /**< IMU message to publish */
+std_msgs__msg__String debug_msg;           /**< debug message to publish */      
 // --- WIFI CONFIGURATION ---
 char wifiNetName[]  = "FASTWEB-USA6DG";  /**< Wi-Fi network SSID */
 char wifiPassword[] = "26KCXAYRSU";      /**< Wi-Fi network password */

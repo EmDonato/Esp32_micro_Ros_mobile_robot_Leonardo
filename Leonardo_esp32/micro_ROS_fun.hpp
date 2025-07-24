@@ -35,6 +35,12 @@
     }                                                 \
   } while (0)
 
+
+extern const float GYRO_VAR;  // rad^2/s^2 
+extern const float ACCEL_VAR;  // m^2/s^4
+extern const float G_TO_MS2;
+extern const float DEG2RAD;
+
 /**
  * @brief Initialize micro-ROS (transport, nodes, pubs/subs, timers, executor).
  * @return 0 on success; negative error code on failure.
@@ -124,4 +130,38 @@ void lidar_read_timer_callback(rcl_timer_t *timer, int64_t last_call_time);
  */
 builtin_interfaces__msg__Time get_now();
 
+/**
+ * @brief inizialize the ros IMU message
+ * @param *msg  Pointer to the message instance.
+ * @param *frame_id string for the message ID.
+ */
+
+void imu_msg_init(sensor_msgs__msg__Imu *msg, const char *frame_id);
+
+/**
+ * @brief Fill the variable fields of a sensor_msgs::msg::Imu before publishing.
+ *
+ * Sets the header timestamp (sec/nanosec) using the micro-ROS agent epoch and
+ * writes angular velocity (rad/s) and linear acceleration (m/s²) values.
+ * It does NOT touch frame_id, covariances, or orientation, which should be
+ * initialized once in imu_msg_init().
+ *
+ * @param[out] msg      Pointer to the IMU message to populate.
+ * @param[in]  ax_ms2   Linear acceleration X [m/s²].
+ * @param[in]  ay_ms2   Linear acceleration Y [m/s²].
+ * @param[in]  az_ms2   Linear acceleration Z [m/s²].
+ * @param[in]  gx_rads  Angular velocity X [rad/s].
+ * @param[in]  gy_rads  Angular velocity Y [rad/s].
+ * @param[in]  gz_rads  Angular velocity Z [rad/s].
+ */
+
+void imu_msg_fill(sensor_msgs__msg__Imu *msg,
+                  float ax_ms2, float ay_ms2, float az_ms2,
+                  float gx_rads, float gy_rads, float gz_rads);
+
+      /**
+ * @brief publishe function for debug message
+ * @param *msg  Pointer to the message instance.
+ */            
+void publish_debug(const char* msg);
 #endif // MICRO_ROS_FUN_HPP

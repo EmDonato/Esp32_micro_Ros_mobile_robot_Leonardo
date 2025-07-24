@@ -13,6 +13,48 @@
 /**
  * @brief Computes wheel RPM values from angular velocities.
  *
+ * @param v_norm normalize longitudinal velocity from teleop_node (m/s).
+ * @param w_norm normalize angular velocity from teleop_node rad/s).
+ * @return A pair of floats: {omega_left, omega_right} in revolutions per minute (rad/s).
+ *
+ */
+
+std::pair<float, float> compute_wheel_speeds(float v_norm, float w_norm)
+{
+    // Prevent excessive spinning when stationary
+    if (std::abs(v_norm) < 1e-2f) {
+        w_norm *= 0.8f;
+    }
+
+    // Scale normalized inputs to physical units
+    float v = constrain(v_norm, -1.0f, 1.0f) * V_MAX;
+    float w = constrain(w_norm, -1.0f, 1.0f) * W_MAX;
+
+
+    // Linear speeds for each wheel
+    float v_right = v + (WHEEL_SEPARATION / 2.0f) * w;
+    float v_left  = v - (WHEEL_SEPARATION / 2.0f) * w;
+
+    // Ensure wheels do not exceed linear speed limit
+    float max_speed = std::max(std::abs(v_right), std::abs(v_left));
+    if (max_speed > V_MAX) {
+        float scale = V_MAX / max_speed;
+        v_right *= scale;
+        v_left  *= scale;
+    }
+
+    // Convert linear speed [m/s] to angular speed [rad/s]
+    float omega_right = v_right / WHEEL_RADIUS;
+    float omega_left  = v_left  / WHEEL_RADIUS;
+
+    return {omega_left, omega_right};
+}
+
+
+
+/**
+ * @brief Computes wheel RPM values from angular velocities.
+ *
  * @param omega_left  Left wheel angular velocity in radians per second (rad/s).
  * @param omega_right Right wheel angular velocity in radians per second (rad/s).
  * @return A pair of floats: {rpm_left, rpm_right} in revolutions per minute (RPM).
@@ -65,5 +107,9 @@ inline float complementaryFilter(float theta_enc_raw, float theta_imu) {
     const float alpha = 0.98f;
     return alpha * theta_imu + (1.0f - alpha) * theta_enc_raw;
 }
+
+
+
+
 
 #endif // CONTROL_TOOLS_H

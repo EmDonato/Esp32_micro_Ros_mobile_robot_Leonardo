@@ -1,3 +1,7 @@
+
+
+
+
 #ifndef VARIABLE_HPP
 #define VARIABLE_HPP
 
@@ -12,9 +16,12 @@
 #include <rclc/rclc.h>
 #include <rclc/executor.h>
 #include <std_msgs/msg/float32_multi_array.h>
-#include <geometry_msgs/msg/vector3.h>
+//#include <geometry_msgs/msg/vector3.h>
+#include <geometry_msgs/msg/twist.h>
 #include <nav_msgs/msg/odometry.h>
 #include <geometry_msgs/msg/quaternion.h>
+#include <sensor_msgs/msg/imu.h>
+#include <std_msgs/msg/string.h>
 
 #include <rosidl_runtime_c/string_functions.h>
 #include <std_msgs/msg/header.h>
@@ -37,8 +44,12 @@
 
 // Motor and encoder parameters
 #define ENCODER_PPR     (497 * 2) /**< Pulses per revolution of Hall encoder */
-#define WHEEL_RADIUS    0.034f    /**< Wheel radius in meters */
+#define WHEEL_RADIUS    0.0346f    /**< Wheel radius in meters */
 #define WHEEL_SEPARATION 0.20f    /**< Distance between wheels in meters */
+    // Robot kinematics constants
+#define V_MAX            0.362f               ///< Max linear speed [m/s]
+#define W_MAX            2.0f * V_MAX / WHEEL_SEPARATION ///< Max angular speed [rad/s]
+
 #define PID_DT          100.0f    /**< PID control loop period in ms */
 #define DEFAULT_DT      0.01f     /**< Default time step in seconds */
 
@@ -84,9 +95,16 @@ extern Encoder encoder_R;
 
 // micro-ROS communication objects
 extern rcl_publisher_t encoder_pub;
+extern rcl_publisher_t imu_pub;
+extern rcl_publisher_t debug_pub;
+
 extern rcl_subscription_t control_sub;
+
 extern rcl_node_t enc_node;
 extern rcl_node_t ctrl_node;
+extern rcl_node_t imu_node;
+extern rcl_node_t debug_node;
+
 extern rcl_timer_t timer_odmtry;
 extern rcl_timer_t timer_IMU;
 extern rcl_timer_t timer_ctrl;
@@ -103,7 +121,9 @@ extern EncoderPoseEstimator Enc_est;
 // ROS message objects
 extern geometry_msgs__msg__Vector3 control_msg;
 extern nav_msgs__msg__Odometry odom_msg;
-
+extern geometry_msgs__msg__Twist cmd_vel_msg;
+extern sensor_msgs__msg__Imu imu_msg;
+extern std_msgs__msg__String debug_msg;
 // Data buffers
 extern float data_array[5];
 
