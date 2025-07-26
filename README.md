@@ -1,213 +1,95 @@
-# Differential-Drive ESP32 Robot with micro-ROS Humble
+# Leonardo ESP32 Differential-Drive Unicycle Robot with micro-ROS and ROS2 Humble
 
-This project implements a differential-drive robot using an ESP32 microcontroller and integrates it with micro-ROS Humble for ROS 2 communication. The system fuses wheel encoder data and IMU measurements to perform odometry and publishes it over ROS 2 with also the Lider Scan for SLAM, while also subscribing to request commands of a gamepad. The ros2 project for the companion PC is findable here: https://github.com/EmDonato/Leonardo.git. Actually it's only for teleoperation application, so it's implemented only joystick navigation. Stay tuned for the autonoumus navigation.
+A mobile differential-drive unicycle robot powered by an **ESP32** microcontroller and seamlessly integrated with **ROS 2 Humble** and **micro-ROS** over Wi‑Fi. It fuses wheel encoder data and IMU measurements for accurate odometry, publishes LiDAR scans for SLAM, and subscribes to gamepad commands for teleoperation.
 
-![Leonardo](docs/img/Leonardo.jpg "Robot overview")
-## Table of Contents
+![Leonardo Robot](docs/img/Leonardo.jpg)
 
-1. [Hardware Setup](#hardware-setup)
-2. [Software Architecture](#software-architecture)
+> **Demo Video:** `docs/video/demo.mp4`
 
-   * [Leonardo_v1.0.ino](#Leonardo-v10ino)
-   * [Variable.hpp / Variable.cpp](#variablehpp--variablecpp)
-   * [ISR.hpp / ISR\_Handlers](#isrhpp--isr_handlers)
-   * [EncoderPoseEstimator](#encoderposeestimator)
-   * [UnicycleOdometry](#unicycleodometry)
-   * [ControlTools](#controltools)
-   * [IMU\_Tools](#imu_tools)
-   * [micro\_ROS\_fun.hpp / micro\_ROS\_fun.cpp](#micro_ros_funhpp--micro_ros_funcpp)
-3. [Workflow](#workflow)
-4. [ROS 2 Integration](#ros-2-integration)
-5. [PID Control](#pid-control)
-6. [Calibration](#calibration)
-7. [License](#license)
+## 🗂️ Directory Layout
 
-## Hardware Setup
+```text
+/
+├── leonardo/                 # Companion PC ROS 2 workspace
+├── Leonardo_esp32/           # Primary ESP32 firmware
+├── Leonardo_Lidar/           # Secondary ESP32 LiDAR node
+├── libraries_arduinoIDE/     # Custom Arduino libraries
+├── chassis_leonardo_3Dprint/ # 3D chassis CAD & STLs
+├── docs/
+│   ├── img/                  # Project images
+│   └── video/                # Demo videos
+└── README.md                 # This overview file
+```
+---
 
-* **Microcontroller**: ESP32
-* **Wheel Encoders**: Magnetic encoders connected to GPIO pins (motor 12v dc 25ga-370, 130 rpm)
-* **IMU**: MPU6050 connected via I2C (SDA, SCL pins)
-* **Motor Driver**: L298N controlled via PWM and digital direction pins (findable here: https://github.com/EmDonato/motorDriver.git)
-* **LiDAR**: LD06 (handled in a separate module https://github.com/EmDonato/ld06_esp32_microRos.git; requires an additional ESP32 when integrated)
-* **Battery**: 12v nimh battery
-* **DC-DC converter**: XL4015 STEP DOWN
+## 🔧 Hardware Setup
 
-
-## Software Architecture
-
-### Leonardo_v1.0.ino
-
-* **setup()**: Initializes Serial, motor driver, IMU (with calibration), encoders (attach ISRs), PID controllers, and micro-ROS.
-* **loop()**: Spins the micro-ROS executor to handle timers and subscriptions.
-
-### Variable.hpp / Variable.cpp
-
-* **Global Constants**: Hardware pin definitions, encoder PPR, wheel geometry, PID limits, etc.
-* **Extern Objects**: `motorDriver`, `encoder_L`, `encoder_R`, `imu`, `odom_msg`, `executor`, etc.
-
-### ISR.hpp / ISR\_Handlers
-
-* **encoderISR\_L / encoderISR\_R**: Interrupt service routines for left/right encoders, updating tick counts and direction.
-
-### EncoderPoseEstimator
-
-* **Purpose**: Convert wheel RPM to linear and angular velocity and integrate heading.
-* **Key Method**: `update(rpm_left, rpm_right, dt)` computes velocities and updates `theta_enc`.
-
-### UnicycleOdometry
-
-* **Purpose**: Integrate fused linear and angular velocities to track `(x, y, theta)` pose.
-* **Key Method**: `updateFromFusion(v, omega, theta, dt)` updates position based on current heading.
-
-### ControlTools
-
-* **computeRPM**: Convert angular velocity (rad/s) to RPM.
-* **normalize\_angle**: Wrap angles to `[-π, π]`.
-* **complementaryFilter**: Fuse encoder and IMU yaw estimates.
-
-### IMU\_Tools
-
-* **calibrateGyroZ()**: Compute gyroscope Z-axis bias by sampling while stationary.
-
-### micro\_ROS\_fun.hpp / micro\_ROS\_fun.cpp
-
-* **initMicroROS()**: Configures Wi-Fi transport, ROS nodes, publishers, subscribers, timers, and executor.
-* **Error Macros**: `RCCHECK`, `RCSOFTCHECK` for robust ROS calls.
-* **Callbacks**:
-
-  * `subscription_callback_control`: Updates wheel velocity references on command.
-  * `timer_callback_IMU`: Integrates gyro data to update IMU yaw.
-  * `timer_callback_odometry`: Reads encoders, fuses yaw, updates odometry, and publishes.
-  * `timer_callback_ctrl_PID`: Runs PID loops to drive motors.
-  * `init_odom_msg`: Initializes odometry message fields.
-  * `yaw_to_quat`: Utility to convert yaw to quaternion.
-  * `get_now`: Retrieves current time for ROS stamps.
-
-## Workflow
-
-1. **Startup**: ESP32 boots, runs `setup()`, initializes all hardware and micro-ROS.
-2. **Calibration**: Gyro bias is calculated by `calibrateGyroZ()`.
-3. **Periodic Tasks**:
-
-   * **IMU Timer**: Updates IMU-based yaw every 10 ms.
-   * **Odometry Timer**: Every 50 ms, encoder RPMs are read, heading fused, and odometry published.
-   * **Control Timer**: Every 50 ms, PID computes motor commands based on velocity references.
-4. **Control**: Velocity commands published to `/velocity_ctrl` topic are received and processed.
-5. **Execution**: `loop()` continuously spins the ROS executor to service callbacks.
-## micro-ROS Agent & Arduino Library Setup
-
-To enable communication between your ESP32 robot and the ROS 2 network, follow these steps (refer to the official guide: [https://github.com/micro-ROS/micro\_ros\_arduino](https://github.com/micro-ROS/micro_ros_arduino)):
-
-1. **Install and Run the micro-ROS Agent**
-
-   * Ensure ROS 2 Humble is installed on your host (PC or Raspberry Pi).
-   * Build and run the agent for UDP transport:
-
-     ```bash
-     ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
-     ```
-
-2. **Configure the Arduino micro-ROS Library**
-
-   * Update your workspace’s `colcon.meta` to increase RMW limits:
-
-     ```json
-     {
-       "rmw_microxrcedds": {
-         "cmake-args": [
-           "-DRMW_UXRCE_MAX_NODES=5",
-           "-DRMW_UXRCE_MAX_PUBLISHERS=10",
-           "-DRMW_UXRCE_MAX_SUBSCRIPTIONS=5",
-           "-DRMW_UXRCE_MAX_SERVICES=1",
-           "-DRMW_UXRCE_MAX_CLIENTS=1",
-           "-DRMW_UXRCE_MAX_HISTORY=4",
-           "-DRMW_UXRCE_TRANSPORT=custom"
-         ]
-       }
-     }
-     ```
-   * Rebuild the `rmw_microxrcedds` package:
-
-     ```bash
-     colcon build --merge-install --packages-select rmw_microxrcedds
-     ```
-
-3. **Verify Connectivity**
-
-   * Be sure to change the wifi parameters with your own parameters (micro_ros_fun.cpp)
-
-
-This configuration lets your ESP32 publish odometry and subscribe to velocity commands over ROS 2 using micro-ROS.
-
-## Detailed ROS 2 Integration
-
-### Message Types
-
-* **nav\_msgs/Odometry**: publishes robot pose (position + orientation) and velocity.
-* **geometry\_msgs/Vector3**: subscribes to control input (left and right wheel angular velocities).
-
-### Published Topics
-
-* **/odom** (`nav_msgs/Odometry`)
-
-  * **Description**: Robot's pose and velocity relative to the `odom` frame.
-  * **Message Fields**:
-
-    * `header.stamp`: Timestamp of measurement (built from `millis()`).
-    * `header.frame_id`: "odom".
-    * `child_frame_id`: "base\_link".
-    * `pose.pose.position`: X, Y coordinates.
-    * `pose.pose.orientation`: Quaternion from fused yaw.
-    * `twist.twist.linear.x`: Linear velocity.
-    * `twist.twist.angular.z`: Angular velocity.
-
-### Subscribed Topics
-
-* **/velocity\_ctrl** (`geometry_msgs/Vector3`)
-
-  * **Description**: Target angular velocities for left (x) and right (y) wheels.
-  * **Usage**: Received values are stored in `w_L_ref` and `w_R_ref`, converted to RPM, and fed into PID controllers.
-
-### Additional Communication
-
-* **Teleoperation Input**
-
-  * **Source**: A separate teleop node publishes raw velocity commands (e.g., `geometry_msgs/Twist`).
-  * **Processing**: These commands are parsed by a custom node/script into separate wheel angular velocities and republished on `/velocity_ctrl`. This allows integration with keyboard or joystick teleoperation.
-
-
-## PID Control library
-findable here: https://github.com/EmDonato/PID_control.git 
-* **Controllers**: Two independent PID loops for left and right wheels
-* **Feedforward**: Enabled to improve dynamic response
-* **Deadzone**: Zero threshold prevents jitter around zero velocity
-
-## Calibration
-
-* **Gyroscope**: `calibrateGyroZ()` averages 500 samples to compute bias
+* **Microcontroller:** ESP32 DevKit (Wi‑Fi enabled)
+* **Wheel Encoders:** Magnetic encoders on 12 V DC motors (25GA‑370, 130 RPM)
+* **IMU:** MPU6050 via I2C (SDA/SCL)
+* **Motor Driver:** L298N (PWM + digital direction pins)
+  [motorDriver library](https://github.com/EmDonato/motorDriver.git)
+* **LiDAR:** LD06 on secondary ESP32
+  [LD06 module](https://github.com/EmDonato/ld06_esp32_microRos.git)
+* **Battery:** 12 V NiMH pack
+* **DC-DC Converter:** XL4015 step‑down module
 
 ---
 
-## Next Steps
+## 🚀 Core Components
 
-1. **Update Velocity Command Message Type**
+### Companion PC (`leonardo`)
 
-   * Verify the current topic (`/cmd_vel` or equivalent).
+* Teleoperation: `joy_node` & `teleop_twist_joy` for gamepad control
+* Command Arbitration: `twist_mux` merging multiple `/cmd_vel` sources
+* TF Broadcasters: `odom → base_link`, `base_link → base_laser`
+* Time Synchronization: `/time_sync` messages align PC and ESP32 clocks
+* SLAM Mapping: `slam_toolbox` for real-time 2D mapping
+* Visualization: preconfigured RViz2 layout
 
-2. **Integrate Nav2 for Autonomous Navigation**
+### ESP32 Firmware Modules
 
-   * Add nav2
+#### Main ESP32 (`Leonardo_esp32`)
 
-3. **Review Publishing Topics**
+* Odometry: complementary filter fusing encoder + IMU data
+* Control: feedforward + PID loops generating motor commands
+* micro-ROS: publishes `/odom`, subscribes `/cmd_vel_mux`, etc.
 
-   * **`/odom`**: Publish filtered odometry (e.g., using `robot_localization`).
-   * **`/imu`**: Publish IMU data (linear acceleration and angular velocity). (to be ready for robot_localization)
-   * **`/debug_string`**: Add a publisher of type `std_msgs/msg/String` for debug and diagnostic messages.
+#### LiDAR Node (`Leonardo_Lidar`)
+
+* Packet Parsing: decodes LD06 scan data into distances & confidences
+* Scan Assembly: builds full 360° `LaserScan` messages
+* Timestamp Sync: applies PC-derived offset for accurate stamps
+* ROS 2 Interface: publishes scans and debug logs
+
+### Libraries (`libraries_arduinoIDE`)
+
+* Motor driver abstractions
+* PID controller utilities (with feedforward and deadzone)
+
+### Chassis Model (`chassis_leonardo_3Dprint`)
+
+* CAD files and STL exports for 3D-printing the robot chassis
 
 ---
 
-> Once these steps are complete, the robot will be able to receive correct velocity commands, navigate autonomously, and provide real-time diagnostic data for easier debugging and system validation.
+## 📋 Recent Updates
 
-## License
+* **Unified Workspace:** merged PC and ESP32 projects into one directory structure
+* **Time Sync:** added periodic `/time_sync` publisher and subscriber nodes
+* **Twist\_mux:** configured priority and timeouts for manual vs. autonomous commands
+* **IMU msg:** send imu msg
+* **LiDAR Node:** enhanced error handling and synchronized scans every 30 s
+* **Libraries:** released motor driver feedforward update and advanced PID tuning
 
-Released under the MIT License.
+---
+
+## 🚀 Next Steps
+
+* Integrate **Nav2** for full autonomous navigation
+
+---
+
+## 📄 License
+
+Released under the **MIT License**. See [LICENSE](LICENSE) for details.
