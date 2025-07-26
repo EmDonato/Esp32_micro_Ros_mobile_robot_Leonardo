@@ -120,7 +120,7 @@ int initMicroROS() {
         &control_sub,
         &ctrl_node,
         ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
-        "/cmd_vel") != RCL_RET_OK) {
+        "/cmd_vel_mux") != RCL_RET_OK) {
     publish_debug("[ERROR] Failed to initialize cmd_vel subscriber");
     return -5;
   }
