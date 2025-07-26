@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>leonardo</name>
+  <version>0.0.0</version>
+  <description>TODO: Package description</description>
+
+  <!-- Gruppo richiesto per pacchetti che definiscono interfacce -->
+  <member_of_group>rosidl_interface_packages</member_of_group>
+
+  <maintainer email="mcf.donato@gmail.com">genesis</maintainer>
+  <license>TODO: License declaration</license>
+
+  <!-- Build tool -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Dipendenze per generazione messaggi -->
+  <build_depend>rosidl_default_generators</build_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+
+  <!-- Dipendenze messaggi usati -->
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <depend>rclcpp</depend>
+  <depend>geometry_msgs</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+

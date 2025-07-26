@@ -1,0 +1,26 @@
+# Colcon / ROS2 build artifacts
+build/
+install/
+log/
+
+# ROS logs
+*.log
+
+# CMake generated
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Colcon metadata
+.meta/
+
+# Python cache
+**/__pycache__/
+**/*.py[cod]
+
+# VSCode settings (or other IDEs)
+.vscode/
+.idea/
+
+

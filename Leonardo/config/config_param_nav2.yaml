@@ -1,0 +1,63 @@
+/**:
+  ros__parameters:
+    use_sim_time: false
+    autostart: true
+
+    global_costmap:
+      ros__parameters:
+        global_frame: "map"
+        robot_base_frame: "base_link"
+        robot_radius: 0.25
+        resolution: 0.05
+        footprint_padding: 0.01
+        plugins: ["obstacle_layer", "inflation_layer"]
+        obstacle_layer:
+          plugin: "nav2_costmap_2d::ObstacleLayer"
+          scan_topic: "/scan"
+        inflation_layer:
+          plugin: "nav2_costmap_2d::InflationLayer"
+          inflation_radius: 0.2
+
+    local_costmap:
+      ros__parameters:
+        global_frame: "odom"
+        robot_base_frame: "base_link"
+        robot_radius: 0.25
+        resolution: 0.05
+        footprint_padding: 0.01
+        plugins: ["obstacle_layer", "inflation_layer"]
+        obstacle_layer:
+          plugin: "nav2_costmap_2d::ObstacleLayer"
+          scan_topic: "/scan"
+        inflation_layer:
+          plugin: "nav2_costmap_2d::InflationLayer"
+          inflation_radius: 0.2
+
+    planner_server:
+      ros__parameters:
+        expected_planner_frequency: 5.0
+        planner_plugins: ["GridBased"]
+        GridBased:
+          plugin: "nav2_navfn_planner/NavfnPlanner"
+
+    controller_server:
+      ros__parameters:
+        controller_plugins: ["FollowPath"]
+        FollowPath:
+          plugin: "nav2_regulated_pure_pursuit_controller/RegulatedPurePursuitController"
+
+    bt_navigator:
+      ros__parameters:
+        default_bt_xml_filename: "/opt/ros/humble/share/nav2_bt_navigator/behavior_trees/navigate_w_replanning_and_recovery.xml"
+
+    lifecycle_manager:
+      ros__parameters:
+        use_sim_time: false
+        autostart: true
+        node_names:
+          - map_server
+          - planner_server
+          - controller_server
+          - bt_navigator
+          - lifecycle_manager
+
