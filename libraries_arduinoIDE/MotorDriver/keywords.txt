@@ -1,0 +1,21 @@
+MotorDriver	KEYWORD1
+L298N		KEYWORD1
+forward		KEYWORD2
+backward	KEYWORD2
+stop		KEYWORD2
+init		KEYWORD2
+init		KEYWORD2
+channel0	KEYWORD2
+channel1	KEYWORD2
+enA		KEYWORD2
+enB		KEYWORD2
+in1		KEYWORD2
+in2		KEYWORD2
+in3		KEYWORD2
+in4		KEYWORD2
+ledcWrite	KEYWORD2
+ledcSetup	KEYWORD2
+ledcAttachPin	KEYWORD2
+pinMode	KEYWORD2
+analogWrite	KEYWORD2
+
