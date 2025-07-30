@@ -36,7 +36,7 @@
   } while (0)
 
 
-extern const float GYRO_VAR;  // rad^2/s^2 
+extern const float GYRO_VAR;  // rad^2/s^2 advised
 extern const float ACCEL_VAR;  // m^2/s^4
 extern const float G_TO_MS2;
 extern const float DEG2RAD;

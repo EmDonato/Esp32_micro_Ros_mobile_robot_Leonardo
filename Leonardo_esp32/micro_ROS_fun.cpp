@@ -195,35 +195,46 @@ void subscription_callback_control(const void *msgin) {
 
 void timer_callback_IMU(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(last_call_time);
-  if (timer == NULL) return;
+  if (timer == nullptr) return;
 
-  static float prev_gyro_z = 0.0;
-  int16_t gz_raw = imu.getRotationZ(); 
-  float gz = (gz_raw - gyro_z_bias) / 131.0 * DEG_TO_RAD;  // rad/s (con scala ±250°/s)
-  //float gz_filtered = alpha * prev_gyro_z + (1-alpha) * gz;
+  // 1) Read all raw IMU measurements
+  int16_t ax_raw, ay_raw, az_raw, gx_raw, gy_raw, gz_raw;
+  imu.getMotion6(&ax_raw, &ay_raw, &az_raw, &gx_raw, &gy_raw, &gz_raw);
 
-  portENTER_CRITICAL_ISR(&timerMux);
-  Theta_IMU += gz * 0.01;  // integrazione con Δt = 10 ms
- //odometry.setTheta(theta);
-  Theta_IMU = normalize_angle(Theta_IMU);
-  portEXIT_CRITICAL_ISR(&timerMux);
+  // 2) Convert raw to physical units
+  constexpr float DEG2RAD = static_cast<float>(M_PI) / 180.0f;
+  constexpr float G_TO_MS2   = 9.80665f;
+  float gz = (gz_raw - gyro_z_bias) / 131.0f * DEG2RAD;
+  float ax = (ax_raw / 16384.0f) * G_TO_MS2;
+  float ay = (ay_raw / 16384.0f) * G_TO_MS2;
+  float az = (az_raw / 16384.0f) * G_TO_MS2;
 
-  prev_gyro_z = gz;
-  int16_t ax, ay, az, gx, gy;
-  imu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz_raw);
+  // 3) Determine if robot is moving via odometry
+  bool is_moving = (odometry.getLinearVelocity()  != 0.0f ||
+                    odometry.getAngularVelocity() != 0.0f);
 
-  // Scala (assumi ±2g e ±250°/s)
-  float ax_ms2 = (ax / 16384.0f) * G_TO_MS2;
-  float ay_ms2 = (ay / 16384.0f) * G_TO_MS2;
-  float az_ms2 = (az / 16384.0f) * G_TO_MS2;
+  if (is_moving) {
+    // 3a) Integrate yaw when moving
+    portENTER_CRITICAL_ISR(&timerMux);
+    Theta_IMU += gz * 0.01f;        // Δt = 10 ms
+    Theta_IMU  = normalize_angle(Theta_IMU);
+    portEXIT_CRITICAL_ISR(&timerMux);
+  } else {
+    // 3b) When stationary, smooth-update the bias (EMA)
+    constexpr float BETA = 0.95f;  // smoothing factor (0 < BETA < 1)
+    // raw measurement in gyro counts → bias in same units
+    gyro_z_bias = BETA * gyro_z_bias + (1.0f - BETA) * gz_raw;
+  }
 
-  float gx_rads = (gx / 131.0f) * DEG2RAD;
-  float gy_rads = (gy / 131.0f) * DEG2RAD;
-  float gz_rads = (gz_raw / 131.0f) * DEG2RAD;
-
-  imu_msg_fill(&imu_msg, ax_ms2, ay_ms2, az_ms2, gx_rads, gy_rads, gz_rads);
-  RCSOFTCHECK(rcl_publish(&imu_pub, &imu_msg, NULL));
+  // 4) Publish IMU message (raw data, uncorrected in the message itself)
+  imu_msg_fill(&imu_msg,
+               ax, ay, az,
+               gx_raw / 131.0f * DEG2RAD,
+               gy_raw / 131.0f * DEG2RAD,
+               gz_raw / 131.0f * DEG2RAD);
+  RCSOFTCHECK(rcl_publish(&imu_pub, &imu_msg, nullptr));
 }
+
 
 void timer_callback_odometry(rcl_timer_t *timer, int64_t last_call_time) {
   RCLC_UNUSED(timer);
@@ -281,7 +292,7 @@ void timer_callback_ctrl_PID(rcl_timer_t *timer, int64_t last_call_time) {
 
     // Left wheel control
     if (std::abs(w_L_ref) > EPS_THRESHOLD) {
-        float uL = std::abs(pid_L.compute(rpm_ref_L, rpm_L));
+        float uL = std::abs(pid_L.compute(std::abs(rpm_ref_L), std::abs(rpm_L)));
         if (w_L_ref > 0) {
             motorDriver.forward(uL, 0);
         } else {
@@ -293,7 +304,7 @@ void timer_callback_ctrl_PID(rcl_timer_t *timer, int64_t last_call_time) {
 
     // Right wheel control
     if (std::abs(w_R_ref) > EPS_THRESHOLD) {
-        float uR = std::abs(pid_R.compute(rpm_ref_R, rpm_R));
+        float uR = std::abs(pid_R.compute(std::abs(rpm_ref_R), std::abs(rpm_R)));
         if (w_R_ref > 0) {
             motorDriver.forward(uR, 1);
         } else {
