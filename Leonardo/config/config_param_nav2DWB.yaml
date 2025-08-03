@@ -12,16 +12,16 @@ bt_navigator:
     replanning_interval: 0.2
     transform_tolerance: 0.1    # tolleranza di 0.2 secondi    
 
-
+planner_server:
   ros__parameters:
     expected_planner_frequency: 5.0
     use_sim_time: false
     planner_plugins: ["GridBased"]
-    transform_tolerance: 0.1    # tolleranza di 0.2 secondi
+    transform_tolerance: 0.1
     GridBased:
       plugin: "nav2_smac_planner/SmacPlannerHybrid"
       tolerance: 0.5
-      smooth_path: true
+      smooth_path: false      # meno smoothing -> path più segmentato
       cost_travel_multiplier: 2.5
       cost_penalty_multiplier: 3.0
       allow_unknown: true
@@ -30,33 +30,69 @@ controller_server:
   ros__parameters:
     use_sim_time: false
     controller_frequency: 20.0
-    transform_tolerance: 0.1    # tolleranza di 0.2 secondi    
-    min_x_velocity_threshold: 0.08
-    min_theta_velocity_threshold: 0.02
+    transform_tolerance: 0.1
+    min_x_velocity_threshold: 0.1
+    min_theta_velocity_threshold: 0.2
     controller_plugins: ["FollowPath"]
+
     FollowPath:
-      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 0.216 #0.18
-      lookahead_dist: 0.30
-      min_lookahead_dist: 0.25
-      max_lookahead_dist: 0.45
-      lookahead_time: 1.8
-      use_velocity_scaled_lookahead_dist: true
-      max_angular_vel: 2.136 #2.5
-      max_linear_accel: 0.20
-      max_angular_accel: 1.2
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: false
+
+      # Velocità massime ridotte ~10%
+      max_vel_x: 0.195    # prima 0.216
+      min_vel_x: 0.0
+      max_vel_theta: 1.9  # prima 2.136
+      min_speed_xy: 0.0
+      max_speed_xy: 0.195
+      min_speed_theta: 0.0
+
+      # Accelerazioni ridotte in proporzione
+      acc_lim_x: 0.18     # prima 0.20
+      acc_lim_theta: 1.0  # prima 1.2
+      decel_lim_x: -0.25
+      decel_lim_theta: -1.5
+
+      # Parametri di simulazione DWB
+      sim_time: 1.5
+      vx_samples: 10
+      vy_samples: 0
+      vtheta_samples: 20
+      # Lista dei critics
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+
+      # Config critics
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 32.0
+      GoalAlign.scale: 24.0
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      Oscillation.scale: 0.0
+
+      # Bias di traiettoria
+      path_distance_bias: 32.0   # segui bene il path
+      goal_distance_bias: 24.0   # avvicinati al goal
+      occdist_scale: 0.05        # evita ostacoli senza strafare
+
+      # Rotazioni sul posto
       rotate_to_heading_angular_vel: 1.0
-      transform_tolerance: 0.3       # più permissivo
-      goal_dist_tol: 0.05            # entro 8 cm considera goal raggiunto
-      goal_yaw_tol: 0.15             # entro ~9° considera goal raggiunto
+      stop_time_buffer: 0.2
+      oscillation_reset_dist: 0.05
+
+      # Tolleranze goal
+      xy_goal_tolerance: 0.05
+      yaw_goal_tolerance: 0.15
+      trans_stopped_velocity: 0.01
+      theta_stopped_velocity: 0.01
 
 velocity_smoother:
   ros__parameters:
     smoothing_frequency: 15.0
-    max_velocity: [0.216, 0.0, 2.136]
-    min_velocity: [-0.216, 0.0, -2.136]
-    max_accel: [0.18, 0.0, 1.2]
-    max_decel: [-0.28, 0.0, -1.8]
+    max_velocity: [0.195, 0.0, 1.9]   # ridotte del 10%
+    min_velocity: [-0.195, 0.0, -1.9]
+    max_accel: [0.18, 0.0, 1.0]
+    max_decel: [-0.25, 0.0, -1.5]
 
 # ----------------- COSTMAPS -----------------
 

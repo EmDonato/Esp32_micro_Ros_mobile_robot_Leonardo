@@ -5,6 +5,12 @@ twist_mux:
         topic: cmd_vel_joy
         timeout: 0.5
         priority: 100
+      nav2_normalized:
+        topic: cmd_vel_nav2_norm
+        timeout: 0.5
+        priority: 10        
+        
+        
 
 
 

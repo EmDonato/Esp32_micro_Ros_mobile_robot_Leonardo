@@ -139,6 +139,15 @@ def generate_launch_description():
         executable='time_sync_publisher',
         output='screen'
     ))
+    
+    # -----------------------------------------------------------------------
+    # cmd_vel from nav2 normalize
+    ld.add_action(Node(
+        package='cmd_vel_normalizer',
+        executable='cmd_vel_normalizer_node',
+        output='screen'
+    ))    
+    
     ld.add_action(Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
