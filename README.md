@@ -1,4 +1,4 @@
-# Leonardo ESP32 Differential-Drive Unicycle Robot with micro-ROS and ROS2 Humble
+# Leonardo ESP32 Differential-Drive Unicycle Robot with micro-ROS and ROS 2 Humble
 
 A mobile differential-drive unicycle robot powered by an **ESP32** microcontroller and seamlessly integrated with **ROS 2 Humble** and **micro-ROS** over Wi‑Fi. It fuses wheel encoder data and IMU measurements for accurate odometry, publishes LiDAR scans for SLAM, and subscribes to gamepad commands for teleoperation.
 
@@ -20,6 +20,41 @@ A mobile differential-drive unicycle robot powered by an **ESP32** microcontroll
 │   └── video/                # Demo videos
 └── README.md                 # This overview file
 ```
+
+---
+
+## 📦 Dependencies
+
+Before getting started, make sure you have the following installed on your companion PC:
+
+* **ROS 2 Humble Hawksbill**
+* **micro-ROS Agent**
+
+  ```bash
+  sudo apt update
+  sudo apt install ros-humble-micro-ros-agent
+  ```
+* **ROS Toolbox (slam\_toolbox)**
+
+  ```bash
+  sudo apt install ros-humble-slam-toolbox
+  ```
+* **Nav2 (Navigation2 stack)**
+
+  ```bash
+  sudo apt install ros-humble-nav2-bringup
+  ```
+* **RViz 2**
+
+  ```bash
+  sudo apt install ros-humble-rviz2
+  ```
+
+Additional system dependencies:
+
+* Python 3.10+ packages: `colcon-common-extensions`, `rosdep`
+* Arduino IDE (for firmware builds)
+
 ---
 
 ## 🔧 Hardware Setup
@@ -45,6 +80,7 @@ A mobile differential-drive unicycle robot powered by an **ESP32** microcontroll
 * TF Broadcasters: `odom → base_link`, `base_link → base_laser`
 * Time Synchronization: `/time_sync` messages align PC and ESP32 clocks
 * SLAM Mapping: `slam_toolbox` for real-time 2D mapping
+* Navigation: Nav2 bringup for path planning and recovery behaviors
 * Visualization: preconfigured RViz2 layout
 
 ### ESP32 Firmware Modules
@@ -81,12 +117,41 @@ A mobile differential-drive unicycle robot powered by an **ESP32** microcontroll
 * **IMU msg:** send imu msg
 * **LiDAR Node:** enhanced error handling and synchronized scans every 30 s
 * **Libraries:** released motor driver feedforward update and advanced PID tuning
-
+* **Nav2 confi file** added config file for nav2 DWB control and PP control (not recommended)
 ---
 
 ## 🚀 Next Steps
 
-* Integrate **Nav2** for full autonomous navigation
+* Integrate autonomous exploration
+
+---
+
+## ⚙️ Usage Examples
+
+### 1️⃣ Source Workspace & Launch Leonardo
+
+```bash
+# Build and source your workspace:
+colcon build --symlink-install
+source install/setup.bash
+
+# Launch the main robot bringup:
+ros2 launch leonardo launch_leonardo.py
+```
+
+### 2️⃣ SLAM (slam\_toolbox)
+
+```bash
+ros2 launch slam_toolbox online_async_launch.py \
+  slam_params_file:=/your/Full/path/Leonardo/src/mio_slam_toolbox/config/mapper_params_online_async.yaml
+```
+
+### 3️⃣ Navigation (Nav2)
+
+```bash
+ros2 launch nav2_bringup navigation_launch.py \
+  params_file:=/your/Full/path/Leonardo/config/config_param_nav2DWB.yaml
+```
 
 ---
 
